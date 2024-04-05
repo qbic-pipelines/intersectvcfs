@@ -13,21 +13,49 @@
                 "errorMessage": "Sample name must be provided and cannot contain spaces",
                 "meta": ["id"]
             },
-            "fastq_1": {
+            "strelka_snvs": {
                 "type": "string",
                 "format": "file-path",
                 "exists": true,
-                "pattern": "^\\S+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 1 must be provided, cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^\\S+\\.vcf.gz$",
+                "errorMessage": ""
             },
-            "fastq_2": {
+            "strelka_snvs_tbi": {
                 "type": "string",
                 "format": "file-path",
                 "exists": true,
-                "pattern": "^\\S+\\.f(ast)?q\\.gz$",
-                "errorMessage": "FastQ file for reads 2 cannot contain spaces and must have extension '.fq.gz' or '.fastq.gz'"
+                "pattern": "^\\S+\\.vcf.gz.tbi$",
+                "errorMessage": ""
+            },
+            "strelka_indels": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf.gz$",
+                "errorMessage": ""
+            },
+            "strelka_indels_tbi": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf.gz.tbi$",
+                "errorMessage": ""
+            },
+            "mutect2": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf.gz$",
+                "errorMessage": ""
+            },
+            "mutect2_tbi": {
+                "type": "string",
+                "format": "file-path",
+                "exists": true,
+                "pattern": "^\\S+\\.vcf.gz.tbi$",
+                "errorMessage": ""
             }
         },
-        "required": ["sample", "fastq_1"]
+        "required": ["sample", "strelka_snvs", "strelka_indels", "mutect2"]
     }
 }

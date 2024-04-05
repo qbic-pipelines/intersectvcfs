@@ -3,8 +3,10 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
-include { FASTQC                 } from '../modules/nf-core/fastqc/main'
+include { BCFTOOLS_CONCAT } from '../modules/nf-core/bcftools/concat/main'
+include { BCFTOOLS_ISEC } from '../modules/nf-core/bcftools/isec/main'
+include { BCFTOOLS_NORM } from '../modules/nf-core/bcftools/norm/main'
+include { BCFTOOLS_SORT } from '../modules/nf-core/bcftools/sort/main'
 include { MULTIQC                } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-validation'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
@@ -28,13 +30,35 @@ workflow INTERSECTVCFS {
     ch_multiqc_files = Channel.empty()
 
     //
-    // MODULE: Run FastQC
+    // MODULE: Concat Strelka SNVs and Indels
     //
-    FASTQC (
-        ch_samplesheet
-    )
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]})
-    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+
+    strelka_vcfs = ch_samplesheet
+        .map { meta, strelka_snvs, strelka_snvs_tbi, strelka_indels, strelka_indels_tbi, mutect2, mutect2_tbi ->
+            [meta + [caller: 'strelka2'], [strelka_snvs, strelka_indels], [strelka_snvs_tbi, strelka_indels_tbi]]
+        }
+
+    BCFTOOLS_CONCAT(strelka_vcfs)
+    ch_versions = ch_versions.mix(BCFTOOLS_CONCAT.out.versions)
+
+    mutect2_vcfs = ch_samplesheet
+        .map { meta, strelka_snvs, strelka_snvs_tbi, strelka_indels, strelka_indels_tbi, mutect2, mutect2_tbi ->
+            [meta + [caller: 'mutect2'], mutect2, mutect2_tbi]
+        }
+
+    BCFTOOLS_NORM(BCFTOOLS_CONCAT.out.vcf.join(BCFTOOLS_CONCAT.out.tbi).mix(mutect2_vcfs))
+    ch_versions = ch_versions.mix(BCFTOOLS_NORM.out.versions)
+
+    BCFTOOLS_SORT(BCFTOOLS_NORM.out.vcf)
+    ch_versions = ch_versions.mix(BCFTOOLS_SORT.out.versions)
+
+    sorted_vcfs = BCFTOOLS_SORT.out.vcf.join(BCFTOOLS_SORT.out.tbi)
+
+    ch_intersect_in = sorted_vcfs.map { meta, vcf, tbi ->
+                                    [[id:meta.id], vcf, tbi]
+                                }.groupTuple(size: 2)
+
+    BCFTOOLS_ISEC(ch_intersect_in)
 
     //
     // Collate and save software versions
